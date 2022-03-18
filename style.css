@@ -1,6 +1,12 @@
+*{
+  background-color: rgba(40,44,52, 1.0);
+}
+
 #canvasGL {
-  width: 700;
-  height: 700;
+  width: 90%;
+  height: 55%;
   border-style: solid;
   background-color: antiquewhite;
+  border-radius: 50pt;
+  border-color: rgba(215,218,224, 1.0);
 }
