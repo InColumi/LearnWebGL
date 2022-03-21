@@ -154,11 +154,11 @@ function initCubeMat(roty, x, y, z) {
 function initSpace() {
 	proj = mat4.create();
 	mat4.identity(proj)
-	mat4.rotateX(proj, proj, 0.5);
-	mat4.rotateY(proj, proj, 0.5);
+	// mat4.rotateX(proj, proj, 0.5);
+	// mat4.rotateY(proj, proj, 0.5);
 
 	const d = 0.2;
-	const x = 0, y = -0.2, z = 0.2;
+	const x = 0, y = 0.5, z = 0;
 	const c1 = initCubeMat(0.1, x - d, y - d, z);
 	const c2 = initCubeMat(0.1, x, y - d, z);
 	const c3 = initCubeMat(0.1, x + d, y - d, z);
@@ -196,7 +196,7 @@ function render(tmat, tcol) {
 	gl.uniformMatrix4fv(info.projloc, false, proj);
 	gl.uniform4f(info.tcolloc, false, tcol[0], tcol[1], tcol[2], tcol[3]);
 
-	gl.drawArrays(gl.TRIANGLES, 0, buffers.size);
+	gl.drawArrays(gl.LINES, 0, buffers.size);
 }
 
 function drawScene() {
@@ -243,13 +243,13 @@ function rotateStallone(roty) {
 
 window.onkeydown = function kot_blini(event) {
 	let angle = 0.2;
-	if (event.code == "Digit1") {
+	if (event.code == "ArrowUp") {
 		for (let i = 0; i < space.size; i++) {
 			rotateCube(space.mat[i], angle);
 		}
 	}
 
-	if (event.code == "Digit2") {
+	if (event.code == "ArrowDown") {
 		for (let i = 0; i < space.size; i++) {
 			rotateCube(space.mat[i], -angle);
 		}
