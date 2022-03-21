@@ -242,19 +242,19 @@ function rotateStallone(roty) {
 }
 
 window.onkeydown = function kot_blini(event) {
+	let angle = 0.2;
+	if (event.code == "Digit1") {
+		for (let i = 0; i < space.size; i++) {
+			rotateCube(space.mat[i], angle);
+		}
+	}
 
-	if (event.code == "Digit1") { rotateCube(space.mat[0], 0.2);}
-	if (event.code == "Digit2") { rotateCube(space.mat[0], -0.2);}
-
-	if (event.code == "Digit3") { rotateCube(space.mat[1], 0.2); }
-	if (event.code == "Digit4") { rotateCube(space.mat[1], -0.2); }
-
-	if (event.code == "Digit5") { rotateCube(space.mat[2], 0.2);}
-	if (event.code == "Digit6") { rotateCube(space.mat[2], -0.2); }
-
-	if (event.code == "Digit7") { rotateCube(space.mat[3], 0.2);}
-	if (event.code == "Digit8") { rotateCube(space.mat[3], -0.2);}
-
+	if (event.code == "Digit2") {
+		for (let i = 0; i < space.size; i++) {
+			rotateCube(space.mat[i], -angle);
+		}
+	}
+	
 	if (event.code == "Numpad4") { rotateCubes(0.2);}
 	if (event.code == "Numpad6") { rotateCubes(-0.2);}
 
