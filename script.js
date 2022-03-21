@@ -19,7 +19,7 @@ function getCanvasById(idCanvas) {
 
 function getContext(canvas) {
 	try {
-		return canvas.getContext("webgl2", { antialias: true });;
+		return canvas.getContext("webgl2", { antialias: false });;
 	} catch (e) {
 		alert(e)
 		return;
@@ -154,11 +154,11 @@ function initCubeMat(roty, x, y, z) {
 function initSpace() {
 	proj = mat4.create();
 	mat4.identity(proj)
-	// mat4.rotateX(proj, proj, 0.5);
-	// mat4.rotateY(proj, proj, 0.5);
+	mat4.rotateX(proj, proj, 0.5);
+	mat4.rotateY(proj, proj, 0.5);
 
 	const d = 0.2;
-	const x = 0, y = 0.5, z = 0;
+	const x = 0, y = -0.2, z = 0.2;
 	const c1 = initCubeMat(0.1, x - d, y - d, z);
 	const c2 = initCubeMat(0.1, x, y - d, z);
 	const c3 = initCubeMat(0.1, x + d, y - d, z);
@@ -196,6 +196,10 @@ function render(tmat, tcol) {
 	gl.uniformMatrix4fv(info.projloc, false, proj);
 	gl.uniform4f(info.tcolloc, false, tcol[0], tcol[1], tcol[2], tcol[3]);
 
+	gl.drawArrays(gl.TRIANGLES, 0, buffers.size);
+
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffers.buf);
+	gl.uniform4f(info.tcolloc, false, 0.1, 0.1, 0.1, 1.0);
 	gl.drawArrays(gl.LINES, 0, buffers.size);
 }
 
@@ -242,21 +246,22 @@ function rotateStallone(roty) {
 }
 
 window.onkeydown = function kot_blini(event) {
+
 	let angle = 0.2;
-	if (event.code == "ArrowUp") {
+	if (event.code == "Digit1") {
 		for (let i = 0; i < space.size; i++) {
 			rotateCube(space.mat[i], angle);
 		}
 	}
 
-	if (event.code == "ArrowDown") {
+	if (event.code == "Digit2") {
 		for (let i = 0; i < space.size; i++) {
 			rotateCube(space.mat[i], -angle);
 		}
 	}
-	
-	if (event.code == "Numpad4") { rotateCubes(0.2);}
-	if (event.code == "Numpad6") { rotateCubes(-0.2);}
+
+	if (event.code == "ArrowUp") { rotateCubes(0.2);}
+	if (event.code == "ArrowDown") { rotateCubes(-0.2);}
 
 	if (event.code == "ArrowLeft") { rotateStallone(0.2); }
 	if (event.code == "ArrowRight") { rotateStallone(-0.2); }
@@ -266,8 +271,8 @@ function main() {
 	let canvas = getCanvasById("canvasGL")
 	gl = getContext(canvas);
 
-	gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-	gl.enable(gl.DEPTH_TEST);
+	// gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+	// gl.enable(gl.DEPTH_TEST);
 
 	initShaders(gl, canvas);
 }
