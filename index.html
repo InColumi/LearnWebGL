@@ -11,7 +11,7 @@
       uniform mat4 tmat;
       uniform mat4 proj;
       uniform vec4 tcol;
-
+      
       void main() {
           gl_Position = pos * tmat * proj;
           col = vec4(tcol[3], tcol[2], tcol[1], 1);
@@ -30,6 +30,7 @@
     </script>
   </head>
   <body onload="main()">
-    <canvas id="canvasGL"></canvas>
+    <canvas id="canvasGL" width="600" height="600"></canvas>
+    <input type="range" min="0" max="100" step="1" value="50"> 
   </body>
 </html>
