@@ -1,0 +1,36 @@
+<html lang="en">
+  <head>
+    <title>Learn WebGL</title>
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+    <script src="./script.js"></script>
+    <script type="text/javascript" src="glMatrix-0.9.5.min.js"></script>
+    <script id="vShader" type="x-shader/x-vertex">#version 300 es
+      in vec4 pos;
+      out vec4 col;
+
+      uniform mat4 tmat;
+      uniform mat4 proj;
+      uniform vec4 tcol;
+      
+      void main() {
+          gl_Position = pos * tmat * proj;
+          col = vec4(tcol[3], tcol[2], tcol[1], 1);
+      }
+    </script>
+
+    <script id="fShader" type="x-shader/x-fragment">#version 300 es
+      precision mediump float;
+
+      in vec4 col;
+      out vec4 color;
+
+      void main() {
+          color = col;
+      }
+    </script>
+  </head>
+  <body onload="main()">
+    <canvas id="canvasGL" width="600" height="600"></canvas>
+    <input type="range" min="0" max="100" step="1" value="50"> 
+  </body>
+</html>
