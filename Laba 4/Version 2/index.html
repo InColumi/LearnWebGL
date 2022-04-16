@@ -1,0 +1,49 @@
+<html lang="en">
+  <head>
+    <title>Learn WebGL</title>
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+    <script src="./script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
+      integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
+      crossorigin="anonymous" defer>
+    </script>
+    <script id="vShader" type="x-shader/x-vertex">#version 300 es
+      in vec4 pos;
+      in vec2 a_texcoord;
+      out vec4 col;
+
+      uniform mat4 tmat;
+      uniform mat4 proj;
+      uniform vec4 tcol;
+      out vec2 v_texcoord;
+      void main() {
+          gl_Position = pos * tmat * proj;
+          col = vec4(tcol[3], tcol[2], tcol[1], 1);
+          v_texcoord = a_texcoord;
+      }
+    </script>
+
+    <script id="fShader" type="x-shader/x-fragment">#version 300 es
+      precision mediump float;
+
+      in vec4 col;
+      out vec4 color;
+
+      // приходит из вершинного шейдера
+      in vec2 v_texcoord;
+      
+      uniform sampler2D uSampler1;
+      uniform sampler2D uSampler2;
+
+      void main() {
+          vec4 color0 = texture(uSampler1, v_texcoord);
+          vec4 color1 = texture(uSampler2, v_texcoord);
+          color = color0 * color1;
+      }
+    </script>
+  </head>
+  <body onload="main()">
+    <canvas id="canvasGL" width="600" height="600"></canvas>
+    <input type="range" min="0" max="100" step="1" value="50"> 
+  </body>
+</html>
