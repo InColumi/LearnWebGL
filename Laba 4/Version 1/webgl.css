@@ -1,4 +1,6 @@
 canvas {
+	width: 600pt;
+	height: 600pt;
 	border: 2px solid black;
 	background-color: black;
 }
