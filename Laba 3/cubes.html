@@ -13,8 +13,7 @@
       // Координаты вершины. Атрибут, инициализируется через буфер.
       in vec3 aVertexPosition;
       in vec3 aVertexNormal;
-      
-
+            
       uniform mat4 uMVMatrix;
       uniform mat4 uPMatrix;
       uniform mat3 uNMatrix;
@@ -24,11 +23,16 @@
       uniform vec3 uDiffuseLightColor;
       uniform vec3 uSpecularLightColor;
       
+      out vec2 inTextureCoord;      
+      out vec2 outTextureCoord;
+      
       out vec3 vLightWeighting;
+      
       const float shininess = 16.0;
       
       uniform int typeAttenuation;
       uniform int lightingModel;
+      
       // Ламберт линейное
       void main() {
           // установка позиции наблюдателя сцены
@@ -49,6 +53,7 @@
       
           // Finally transform the geometry
           gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+          outTextureCoord = inTextureCoord;
       }
     </script>
     <script id="vsGuro10" type="x-shader/x-vertex"># version 300 es
@@ -336,15 +341,21 @@
 
     <script id="fSGuro" type="x-shader/x-fragment"># version 300 es
       precision mediump float;
-      
-
+    
       in vec3 vLightWeighting;
-      out lowp vec4 color; 
+      in vec2 inTextureCoord;
+
+      out vec4 color; 
       
       uniform vec4 aVertexColor;
+      uniform sampler2D uSampler1;
+      uniform sampler2D uSampler2;
       
       void main() {
-        color = vec4(vLightWeighting * aVertexColor.rgb, aVertexColor.a);
+        vec4 color0 = texture(uSampler1, inTextureCoord);
+        vec4 color1 = texture(uSampler2, inTextureCoord);
+        color = color0 * color1;
+        // color = vec4(vLightWeighting * aVertexColor.rgb, aVertexColor.a);
       }
     </script>
 

@@ -14,7 +14,7 @@ var nMatrix = mat3.create();
 var typeAttenuation;
 var lightingModel;
 var shading;
-
+var texture;
 
 var lightPosition = {
     x: 2,
@@ -32,6 +32,7 @@ function updateShaderProgramm(vs, fs) {
         attribLocations: {
             vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
             vertexNormal: gl.getAttribLocation(shaderProgram, 'aVertexNormal'),
+            textureCoord: gl.getAttribLocation(shaderProgram, 'inTextureCoord'),
         },
         uniformLocations: {
             modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uMVMatrix'),
@@ -47,9 +48,60 @@ function updateShaderProgramm(vs, fs) {
 
             typeAttenuation: gl.getUniformLocation(shaderProgram, 'typeAttenuation'),
             lightingModel: gl.getUniformLocation(shaderProgram, 'lightingModel'),
+
+            uSampler1: gl.getUniformLocation(shaderProgram, 'uSampler1'),
+            uSampler2: gl.getUniformLocation(shaderProgram, 'uSampler2'),
         }
     };
+    console.log(currentProgramm.attribLocations.textureCoord);
 }
+
+function loadTexture(gl, url) {
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    // Because images have to be download over the internet
+    // they might take a moment until they are ready.
+    // Until then put a single pixel in the texture so we can
+    // use it immediately. When the image has finished downloading
+    // we'll update the texture with the contents of the image.
+    const level = 0;
+    const internalFormat = gl.RGBA;
+    const width = 1;
+    const height = 1;
+    const border = 0;
+    const srcFormat = gl.RGBA;
+    const srcType = gl.UNSIGNED_BYTE;
+    const pixel = new Uint8Array([0, 0, 255, 255]);  // opaque blue
+    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+                  width, height, border, srcFormat, srcType,
+                  pixel);
+  
+    const image = new Image();
+    image.onload = function() {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+                    srcFormat, srcType, image);
+  
+      // WebGL1 has different requirements for power of 2 images
+      // vs non power of 2 images so check if the image is a
+      // power of 2 in both dimensions.
+      if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
+         // Yes, it's a power of 2. Generate mips.
+         gl.generateMipmap(gl.TEXTURE_2D);
+        } else {
+            // No, it's not a power of 2. Turn of mips and set
+            // wrapping to clamp to edge
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      }
+    };
+    image.src = url;
+  
+    return texture;
+}
+
 
 function updateGuroShader() {
     let vs;
@@ -197,6 +249,10 @@ function getIndexById(id) {
     return e.selectedIndex
 }
 
+function isPowerOf2(value) {
+    return (value & (value - 1)) == 0;
+  }
+
 window.onload = function main() {
     const canvas = document.querySelector("#gl_canvas");
     const gl = canvas.getContext("webgl2");
@@ -205,6 +261,11 @@ window.onload = function main() {
         return;
     }
 
+    texture = {
+        t1: loadTexture(gl, 'wood.png'),
+        t2: loadTexture(gl, '1.png')
+    };
+    
     webglLessonsUI.setupSlider("#x", { value: ambientLight * 10, slide: updatePosition(0), min: 0, max: 10, name: "Мощность фонового источника" });
 
     document.addEventListener('keydown', handleKeyDown, true);
@@ -212,6 +273,9 @@ window.onload = function main() {
     // Устанавливаем размер вьюпорта  
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    gl.enable( gl.BLEND ); 
+    gl.blendFunc( gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
     updateAttenuation(getIndexById('atenuation'));
     updatelightingModel(getIndexById('lighting'));
@@ -220,6 +284,7 @@ window.onload = function main() {
     const buffers = initBuffers(gl)
 
     var then = 0;
+
 
     function render(now) {
         now *= 0.001;
@@ -267,6 +332,7 @@ function initShaderProgram(gl, vs, fs) {
     gl.linkProgram(newShaderProgram);
 
     if (!gl.getProgramParameter(newShaderProgram, gl.LINK_STATUS)) {
+        console.log(gl.getProgramInfoLog(newShaderProgram));
         alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(newShaderProgram));
         return null;
     }
@@ -319,6 +385,46 @@ function initBuffers(gl) {
 
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
+    const textureCoordBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
+  
+    const textureCoordinates = [
+      // Front
+      0.0,  0.0,
+      1.0,  0.0,
+      1.0,  1.0,
+      0.0,  1.0,
+      // Back
+      0.0,  0.0,
+      1.0,  0.0,
+      1.0,  1.0,
+      0.0,  1.0,
+      // Top
+      0.0,  0.0,
+      1.0,  0.0,
+      1.0,  1.0,
+      0.0,  1.0,
+      // Bottom
+      0.0,  0.0,
+      1.0,  0.0,
+      1.0,  1.0,
+      0.0,  1.0,
+      // Right
+      0.0,  0.0,
+      1.0,  0.0,
+      1.0,  1.0,
+      0.0,  1.0,
+      // Left
+      0.0,  0.0,
+      1.0,  0.0,
+      1.0,  1.0,
+      0.0,  1.0,
+    ];
+  
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates),
+                  gl.STATIC_DRAW);
+
+    
     const normalBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
 
@@ -382,6 +488,7 @@ function initBuffers(gl) {
     return {
         position: positionBuffer,
         normal: normalBuffer,
+        textureCoord: textureCoordBuffer,
         indices: indexBuffer,
     };
 }
@@ -400,7 +507,6 @@ function makeF32ArrayBuffer(gl, array) {
     return buffer
 }
 
-
 function setupWebGL(gl) {
     // gl.clearColor(1.0, 0.89, 0.77, 1.0);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -414,37 +520,71 @@ function drawScene(gl, program, buffers, time) {
     cubeRotation += mult * time;
 
     setupWebGL(gl)
-    const numComponents = 3;
-    const type = gl.FLOAT;
-    const normalize = false;
-    const stride = 0;
-    const offset = 0;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
-    gl.vertexAttribPointer(
-        program.attribLocations.vertexPosition,
-        numComponents,
-        type,
-        normalize,
-        stride,
-        offset);
+    {
+        const numComponents = 3;
+        const type = gl.FLOAT;
+        const normalize = false;
+        const stride = 0;
+        const offset = 0;
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+        gl.vertexAttribPointer(
+            program.attribLocations.vertexPosition,
+            numComponents,
+            type,
+            normalize,
+            stride,
+            offset);
+        gl.enableVertexAttribArray(program.attribLocations.vertexPosition);
+        
+    }
+    
+    {
+        const numComponents = 2;
+        const type = gl.FLOAT;
+        const normalize = false;
+        const stride = 0;
+        const offset = 0;
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.textureCoord);
+        gl.vertexAttribPointer(
+            program.attribLocations.textureCoord,
+            numComponents,
+            type,
+            normalize,
+            stride,
+            offset);
+        gl.enableVertexAttribArray(program.attribLocations.textureCoord);
+        console.log(program.attribLocations.textureCoord)
+    }
 
-    gl.enableVertexAttribArray(
-        program.attribLocations.vertexPosition);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
-    gl.vertexAttribPointer(
-        program.attribLocations.vertexNormal,
-        numComponents,
-        type,
-        normalize,
-        stride,
-        offset);
-    gl.enableVertexAttribArray(
-        program.attribLocations.vertexNormal);
-
+    {
+        const numComponents = 3;
+        const type = gl.FLOAT;
+        const normalize = false;
+        const stride = 0;
+        const offset = 0;
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
+        gl.vertexAttribPointer(
+            program.attribLocations.vertexNormal,
+            numComponents,
+            type,
+            normalize,
+            stride,
+            offset);
+        gl.enableVertexAttribArray(program.attribLocations.vertexNormal);
+    }
+    
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
 
     gl.useProgram(program.program);
+
+    gl.uniform1i(currentProgramm.uniformLocations.uSampler1, 0);
+    gl.uniform1i(currentProgramm.uniformLocations.uSampler2, 1);
+  
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texture.t1);
+  
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, texture.t2);
 
     setupLights(gl, program)
 
@@ -502,7 +642,7 @@ function drawCube(gl, programInfo, translation, color) {
     gl.uniform4fv(programInfo.uniformLocations.vertexColor, color);
     gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0);
 
-    // gl.uniform4fv(programInfo.uniformLocations.vertexColor, [0, 0, 0, 1]);
+    // gl.uniform4fv(programInfo.uniformLocations.vertexColor, [0, 1, 0, 1]);
     // gl.drawElements(gl.LINES, 36, gl.UNSIGNED_SHORT, 0);
 }
 
