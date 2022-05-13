@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Car Racing</title>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+    <style type="text/css">
+      body {
+        margin: 0px;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="js/three.min.js"></script>
+    <script src="js/ColladaLoader.js"></script>
+    <speedometer id="speed"></speedometer>
+
+    <script>
+      var camera;
+      var scene;
+      var renderer;
+      var geometry;
+      var material;
+      var mesh;
+      var car;
+      var skin;
+
+      var loader = new THREE.ColladaLoader();
+      loader.options.convertUpAxis = true;
+      loader.load("./car.dae", function (collada) {
+        car = collada.scene;
+        skin = collada.skins[0];
+
+        car.scale.x = car.scale.y = car.scale.z = 2;
+        car.updateMatrix();
+
+        init();
+        render();
+      });
+
+      function init() {
+        scene = new THREE.Scene();
+
+        addCamera();
+
+        addFloor();
+
+        addSkyBox();
+
+        addLight();
+
+        addBuildings();
+
+        scene.add(car);
+
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        document.body.appendChild(renderer.domElement);
+      }
+
+      function addCamera() {
+        camera = new THREE.PerspectiveCamera(
+          45,
+          window.innerWidth / window.innerHeight,
+          1,
+          100000
+        );
+        camera.position.y = 5000;
+        camera.position.z = -5000;
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+      }
+
+      function addLight() {
+        pointLight = new THREE.PointLight(0xffffff);
+        pointLight.position = new THREE.Vector3(0, 10000, 0);
+        scene.add(pointLight);
+      }
+
+      function addFloor() {
+        var floorTexture = new THREE.ImageUtils.loadTexture("images/sand.jpg");
+        floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+        floorTexture.repeat.set(3, 3);
+        var floorMaterial = new THREE.MeshBasicMaterial({
+          map: floorTexture,
+          side: THREE.DoubleSide,
+        });
+        var floorGeometry = new THREE.PlaneGeometry(100000, 100000, 100, 100);
+        var floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.position.y = -0.5;
+        floor.rotation.x = Math.PI / 2;
+        scene.add(floor);
+      }
+
+      function addSkyBox() {
+        var imagePrefix = "images/sky";
+        var directions = ["+x", "-x", "+y", "-y", "+z", "-z"];
+        var imageSuffix = ".png";
+        var skyGeometry = new THREE.CubeGeometry(100000, 100000, 100000);
+
+        var materialArray = [];
+        for (var i = 0; i < 6; i++)
+          materialArray.push(
+            new THREE.MeshBasicMaterial({
+              map: THREE.ImageUtils.loadTexture(
+                imagePrefix + directions[i] + imageSuffix
+              ),
+              side: THREE.BackSide,
+            })
+          );
+        var skyMaterial = new THREE.MeshFaceMaterial(materialArray);
+        var skyBox = new THREE.Mesh(skyGeometry, skyMaterial);
+        scene.add(skyBox);
+      }
+
+      function addBuildings() {
+        var geometry = new THREE.CubeGeometry(1000, 2000, 1000);
+        var crateMaterial = new THREE.MeshPhongMaterial({
+          map: THREE.ImageUtils.loadTexture("images/house.png"),
+        });
+        var sandMaterial = new THREE.MeshPhongMaterial({
+          map: THREE.ImageUtils.loadTexture("images/sand.jpg"),
+        });
+        var murMaterial = new THREE.MeshPhongMaterial({
+          map: THREE.ImageUtils.loadTexture("images/rock.jpg"),
+        });
+        var woodMaterial = new THREE.MeshPhongMaterial({
+          map: THREE.ImageUtils.loadTexture("images/wood.jpg"),
+        });
+
+        var moveZ = 6000;
+        var moveY = 2000;
+        var moveX = 2000;
+        for (var i = 0; i < 5; i++) {
+          var building = new THREE.Mesh(geometry, crateMaterial);
+          building.position.z = moveZ;
+          building.position.y = moveY;
+          building.position.x = moveX;
+
+          moveX += 1000;
+          moveY += 500;
+          moveZ += -100;
+          scene.add(building);
+        }
+
+        // Using wireframe materials to illustrate shape details.
+        var wireframeMaterial = new THREE.MeshBasicMaterial({
+          color: 0x000000,
+          wireframe: true,
+          transparent: true,
+        });
+        var prismMultiMaterial = [murMaterial, wireframeMaterial];
+        var sandMultiMaterial = [sandMaterial, wireframeMaterial];
+        var woodMultiMaterial = [woodMaterial, wireframeMaterial];
+
+        // prism
+        var shape = THREE.SceneUtils.createMultiMaterialObject(
+          // radiusAtTop, radiusAtBottom, height, segmentsAroundRadius, segmentsAlongHeight,
+          new THREE.CylinderGeometry(20, 600, 1500, 10, 10),
+          prismMultiMaterial
+        );
+        shape.position.set(4500, 4500, -1000);
+        scene.add(shape);
+
+        // cone - truncated
+        var shape = THREE.SceneUtils.createMultiMaterialObject(
+          // radiusAtTop, radiusAtBottom, height, segmentsAroundRadius, segmentsAlongHeight,
+          new THREE.CylinderGeometry(50, 800, 1400, 20, 4),
+          woodMultiMaterial
+        );
+        shape.position.set(-4000, 4000, -1000);
+        scene.add(shape);
+
+        // pyramid - truncated
+        var shape = THREE.SceneUtils.createMultiMaterialObject(
+          // radiusAtTop, radiusAtBottom, height, segmentsAroundRadius, segmentsAlongHeight,
+          new THREE.CylinderGeometry(50, 1000, 1300, 10, 10),
+          sandMultiMaterial
+        );
+        shape.position.set(-1000, 5000, -200);
+        scene.add(shape);
+      }
+
+      function render() {
+        requestAnimationFrame(render);
+        car.position.x += speed * Math.sin(car.rotation.y);
+        car.position.z += speed * Math.cos(car.rotation.y);
+        camera.lookAt(car.position);
+
+        renderer.render(scene, camera);
+      }
+
+      speed = 0;
+      const MAX_SPEED = 150;
+      const MIN_SPEED = 50;
+      const SPEED_STEP = 10;
+
+      document.onkeydown = function (event) {
+        const keyCode = event.keyCode;
+        if (keyCode == 38 || keyCode == 87) {
+          if (speed < MAX_SPEED) {
+            speed += SPEED_STEP;
+          }
+        } else if (keyCode == 40 || keyCode == 83) {
+          if (speed > -MIN_SPEED) {
+            speed -= SPEED_STEP;
+          }
+          else{
+            speed = -MIN_SPEED
+          }
+        } else if (keyCode == 39 || keyCode == 68) {
+          car.rotation.y -= 0.05;
+        } else if (keyCode == 37 || keyCode == 65) {
+          car.rotation.y += 0.05;
+        }
+        document.getElementById("speed").innerHTML = `<b>${speed}</b>`;
+      };
+    </script>
+  </body>
+</html>
