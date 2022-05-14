@@ -28,6 +28,7 @@
       var mesh;
       var car;
       var skin;
+      var building_coord;
 
       var loader = new THREE.ColladaLoader();
       loader.options.convertUpAxis = true;
@@ -72,7 +73,7 @@
         );
         camera.position.y = 5000;
         camera.position.z = -5000;
-        camera.lookAt(new THREE.Vector3(0, 0, 0));
+        //camera.lookAt(new THREE.Vector3(0, 0, 0));
       }
 
       function addLight() {
@@ -132,24 +133,24 @@
           map: THREE.ImageUtils.loadTexture("images/wood.jpg"),
         });
 
-        var moveZ = 6000;
-        var moveY = 2000;
-        var moveX = 2000;
-        for (var i = 0; i < 5; i++) {
-          var building = new THREE.Mesh(geometry, crateMaterial);
-          building.position.z = moveZ;
-          building.position.y = moveY;
-          building.position.x = moveX;
+        // var moveZ = 6000;
+        // var moveY = 2000;
+        // var moveX = 2000;
+        // for (var i = 0; i < 5; i++) {
+        //   var building = new THREE.Mesh(geometry, crateMaterial);
+        //   building.position.z = moveZ;
+        //   building.position.y = moveY;
+        //   building.position.x = moveX;
 
-          moveX += 1000;
-          moveY += 500;
-          moveZ += -100;
-          scene.add(building);
-        }
+        //   moveX += 1000;
+        //   moveY += 500;
+        //   moveZ += -100;
+        //   scene.add(building);
+        // }
 
         // Using wireframe materials to illustrate shape details.
         var wireframeMaterial = new THREE.MeshBasicMaterial({
-          color: 0x000000,
+          color: 0x00000,
           wireframe: true,
           transparent: true,
         });
@@ -157,68 +158,118 @@
         var sandMultiMaterial = [sandMaterial, wireframeMaterial];
         var woodMultiMaterial = [woodMaterial, wireframeMaterial];
 
+        const x = 0;
+        const z = 5000;
         // prism
         var shape = THREE.SceneUtils.createMultiMaterialObject(
           // radiusAtTop, radiusAtBottom, height, segmentsAroundRadius, segmentsAlongHeight,
-          new THREE.CylinderGeometry(20, 600, 1500, 10, 10),
+          new THREE.CylinderGeometry(200, 300, 1000, 10, 10),
           prismMultiMaterial
         );
-        shape.position.set(4500, 4500, -1000);
+        shape.position.set(x, 400, z);
         scene.add(shape);
 
-        // cone - truncated
-        var shape = THREE.SceneUtils.createMultiMaterialObject(
-          // radiusAtTop, radiusAtBottom, height, segmentsAroundRadius, segmentsAlongHeight,
-          new THREE.CylinderGeometry(50, 800, 1400, 20, 4),
-          woodMultiMaterial
-        );
-        shape.position.set(-4000, 4000, -1000);
-        scene.add(shape);
+        // // cone - truncated
+        // var shape = THREE.SceneUtils.createMultiMaterialObject(
+        //   // radiusAtTop, radiusAtBottom, height, segmentsAroundRadius, segmentsAlongHeight,
+        //   new THREE.CylinderGeometry(50, 800, 1400, 20, 4),
+        //   woodMultiMaterial
+        // );
+        // shape.position.set(-4000, 4000, -1000);
+        // //scene.add(shape);
 
-        // pyramid - truncated
-        var shape = THREE.SceneUtils.createMultiMaterialObject(
-          // radiusAtTop, radiusAtBottom, height, segmentsAroundRadius, segmentsAlongHeight,
-          new THREE.CylinderGeometry(50, 1000, 1300, 10, 10),
-          sandMultiMaterial
-        );
-        shape.position.set(-1000, 5000, -200);
-        scene.add(shape);
+        // // pyramid - truncated
+        // var shape = THREE.SceneUtils.createMultiMaterialObject(
+        //   // radiusAtTop, radiusAtBottom, height, segmentsAroundRadius, segmentsAlongHeight,
+        //   new THREE.CylinderGeometry(50, 1000, 1300, 10, 10),
+        //   sandMultiMaterial
+        // );
+        // shape.position.set(-1000, 5000, -200);
+        // //scene.add(shape);
+
+        building_coord = {
+          one: {
+            x: x,
+            y: z,
+          },
+        };
       }
+
+      speed = 0;
+      const MAX_SPEED = 250;
+      const MIN_SPEED = 50;
+      const SPEED_STEP = 10;
+      const SIZE_COLLISION = 1350;
 
       function render() {
         requestAnimationFrame(render);
+
+        const dist = calcDistance();
+        if (dist < SIZE_COLLISION) {
+          console.log('collision')
+          speed += speed;
+          car.position.x += speed * Math.sin(car.rotation.y);
+          car.position.z += speed * Math.cos(car.rotation.y);
+          speed -= speed;
+        }
+
         car.position.x += speed * Math.sin(car.rotation.y);
         car.position.z += speed * Math.cos(car.rotation.y);
+
         camera.lookAt(car.position);
 
         renderer.render(scene, camera);
       }
 
-      speed = 0;
-      const MAX_SPEED = 150;
-      const MIN_SPEED = 50;
-      const SPEED_STEP = 10;
 
-      document.onkeydown = function (event) {
-        const keyCode = event.keyCode;
-        if (keyCode == 38 || keyCode == 87) {
+      function moveCamera(keyCode) {
+        if (keyCode == 38) {
+          camera.position.y += 100;
+        } else if (keyCode == 40) {
+          camera.position.y -= 100;
+        } else if (keyCode == 39) {
+          camera.position.x -= 100;
+        } else if (keyCode == 37) {
+          camera.position.x += 100;
+        }
+      }
+
+      function moveCar(keyCode) {
+        if (keyCode == 87) {
           if (speed < MAX_SPEED) {
             speed += SPEED_STEP;
           }
-        } else if (keyCode == 40 || keyCode == 83) {
+        } else if (keyCode == 83) {
           if (speed > -MIN_SPEED) {
             speed -= SPEED_STEP;
+          } else {
+            speed = -MIN_SPEED;
           }
-          else{
-            speed = -MIN_SPEED
-          }
-        } else if (keyCode == 39 || keyCode == 68) {
+        } else if (keyCode == 68) {
           car.rotation.y -= 0.05;
-        } else if (keyCode == 37 || keyCode == 65) {
+        } else if (keyCode == 65) {
           car.rotation.y += 0.05;
         }
+      }
+
+      document.onkeydown = function (event) {
+        const keyCode = event.keyCode;
+        moveCamera(keyCode)
+        moveCar(keyCode)
         document.getElementById("speed").innerHTML = `<b>${speed}</b>`;
       };
+
+      function calcDistance() {
+
+        const x1 = building_coord.one.x;
+        const y1 = building_coord.one.y;
+
+        const x2 = car.position.x;
+        const y2 = car.position.z;
+        const dist = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+        console.log(car.position, dist)
+        return dist;
+      }
     </script>
   </body>
 </html>
