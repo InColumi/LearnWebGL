@@ -78,7 +78,7 @@
 
       function addLight() {
         pointLight = new THREE.PointLight(0xffffff);
-        pointLight.position = new THREE.Vector3(0, 10000, 0);
+        pointLight.position = new THREE.Vector3(0, 1000, -30000);
         scene.add(pointLight);
       }
 
@@ -119,7 +119,7 @@
       }
 
       function addBuildings() {
-        var geometry = new THREE.CubeGeometry(1000, 2000, 1000);
+        var geometry = new THREE.CubeGeometry(5000, 10000, 1000);
         var crateMaterial = new THREE.MeshPhongMaterial({
           map: THREE.ImageUtils.loadTexture("images/house.png"),
         });
@@ -133,20 +133,20 @@
           map: THREE.ImageUtils.loadTexture("images/wood.jpg"),
         });
 
-        // var moveZ = 6000;
-        // var moveY = 2000;
-        // var moveX = 2000;
-        // for (var i = 0; i < 5; i++) {
-        //   var building = new THREE.Mesh(geometry, crateMaterial);
-        //   building.position.z = moveZ;
-        //   building.position.y = moveY;
-        //   building.position.x = moveX;
+        var moveZ = 30000;
+        var moveY = 1000;
+        var moveX = 20000;
+        for (var i = 0; i < 5; i++) {
+          var building = new THREE.Mesh(geometry, crateMaterial);
+          building.position.z = moveZ;
+          building.position.y = moveY;
+          building.position.x = moveX;
 
-        //   moveX += 1000;
-        //   moveY += 500;
-        //   moveZ += -100;
-        //   scene.add(building);
-        // }
+          moveX -= 10000;
+          // moveY += 500;
+          // moveZ += 10000;
+          scene.add(building);
+        }
 
         // Using wireframe materials to illustrate shape details.
         var wireframeMaterial = new THREE.MeshBasicMaterial({
@@ -176,7 +176,7 @@
         //   woodMultiMaterial
         // );
         // shape.position.set(-4000, 4000, -1000);
-        // //scene.add(shape);
+        // scene.add(shape);
 
         // // pyramid - truncated
         // var shape = THREE.SceneUtils.createMultiMaterialObject(
@@ -185,7 +185,7 @@
         //   sandMultiMaterial
         // );
         // shape.position.set(-1000, 5000, -200);
-        // //scene.add(shape);
+        // scene.add(shape);
 
         building_coord = {
           one: {
@@ -200,27 +200,36 @@
       const MIN_SPEED = 50;
       const SPEED_STEP = 10;
       const SIZE_COLLISION = 1350;
+      var IS_BACK = false;
 
       function render() {
         requestAnimationFrame(render);
 
         const dist = calcDistance();
         if (dist < SIZE_COLLISION) {
-          console.log('collision')
-          speed += speed;
+          if (IS_BACK === false) {
+            if (speed > MIN_SPEED * 2) {
+              speed = -MIN_SPEED;
+            }
+            else{
+              speed = -speed / 2;
+            }
+            
+            IS_BACK = true;
+          }          
           car.position.x += speed * Math.sin(car.rotation.y);
           car.position.z += speed * Math.cos(car.rotation.y);
-          speed -= speed;
+          updateSpeedInfo();
+        } else {
+          IS_BACK = false;
+          car.position.x += speed * Math.sin(car.rotation.y);
+          car.position.z += speed * Math.cos(car.rotation.y);
         }
-
-        car.position.x += speed * Math.sin(car.rotation.y);
-        car.position.z += speed * Math.cos(car.rotation.y);
 
         camera.lookAt(car.position);
 
         renderer.render(scene, camera);
       }
-
 
       function moveCamera(keyCode) {
         if (keyCode == 38) {
@@ -250,24 +259,30 @@
         } else if (keyCode == 65) {
           car.rotation.y += 0.05;
         }
+        else if(keyCode == 32){
+          speed = 0;
+        }
+      }
+
+      function updateSpeedInfo() {
+        document.getElementById("speed").innerHTML = `<b>${speed}</b>`;
       }
 
       document.onkeydown = function (event) {
         const keyCode = event.keyCode;
-        moveCamera(keyCode)
-        moveCar(keyCode)
-        document.getElementById("speed").innerHTML = `<b>${speed}</b>`;
+        moveCamera(keyCode);
+        moveCar(keyCode);
+        updateSpeedInfo();
       };
 
       function calcDistance() {
-
         const x1 = building_coord.one.x;
         const y1 = building_coord.one.y;
 
         const x2 = car.position.x;
         const y2 = car.position.z;
         const dist = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
-        console.log(car.position, dist)
+        console.log(car.position, dist);
         return dist;
       }
     </script>
