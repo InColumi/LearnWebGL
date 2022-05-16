@@ -1,147 +1,179 @@
-// WebGL - 2D Image
-// from https://webglfundamentals.org/webgl/webgl-2d-image.html
+const vert = `attribute vec2 coords;
+varying highp vec2 vTextureCoord;
 
 
-"use strict";
+void main (void) {
+    vTextureCoord = -coords;
+    gl_Position = vec4(coords, 0.0, 1.0);
+}`
 
-function main() {
-  var image = new Image();
-  requestCORSIfNotSameOrigin(image, "https://webglfundamentals.org/webgl/resources/leaves.jpg")
-  image.src = "https://webglfundamentals.org/webgl/resources/leaves.jpg";
-  image.onload = function() {
-    render(image);
-  };
-}
+const fragBlur = `precision mediump float;
+varying highp vec2 vTextureCoord;
 
-function render(image) {
-  // Get A WebGL context
-  /** @type {HTMLCanvasElement} */
-  var canvas = document.querySelector("#canvas");
-  var gl = canvas.getContext("webgl");
-  if (!gl) {
-    return;
-  }
+uniform sampler2D uSampler;
 
-  // setup GLSL program
-  var program = webglUtils.createProgramFromScripts(gl, ["vertex-shader-2d", "fragment-shader-2d"]);
+uniform float iter;
 
-  // look up where the vertex data needs to go.
-  var positionLocation = gl.getAttribLocation(program, "a_position");
-  var texcoordLocation = gl.getAttribLocation(program, "a_texCoord");
+vec2 coords;
+float x;
+float y;
+float l;
+void main(void){
 
-  // Create a buffer to put three 2d clip space points in
-  var positionBuffer = gl.createBuffer();
+    // Getting distance from origin
+    l = length(vTextureCoord);
+    // Just renaming to reduce typing
+    x = vTextureCoord[0];
+    y = vTextureCoord[1];
+    // Rotating point around origin 
+    coords[0] = x * cos(iter * l) - y * sin(iter * l);
+    coords[1] = x * sin(iter * l) + y * cos(iter * l);
 
-  // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  // Set a rectangle the same size as the image.
-  setRectangle(gl, 0, 0, image.width, image.height);
+    // Transforming coordinates from GL space to texture space
+    // All math can be done directly to vectors
+    coords = coords / 2.0 - 0.5;
 
-  // provide texture coordinates for the rectangle.
-  var texcoordBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-      0.0,  0.0,
-      1.0,  0.0,
-      0.0,  1.0,
-      0.0,  1.0,
-      1.0,  0.0,
-      1.0,  1.0,
-  ]), gl.STATIC_DRAW);
+    // Fragment shader must set this variable
+    gl_FragColor = texture2D(uSampler, coords);
+}`
+let frag = fragBlur;
 
-  // Create a texture.
-  var texture = gl.createTexture();
+
+function loadTexture(gl, prog, url) {
+  const texture = gl.createTexture();
+  const level = 0;
+  const internalFormat = gl.RGBA;
+  const width = 1;
+  const height = 1;
+  const border = 0;
+  const srcFormat = gl.RGBA;
+  const srcType = gl.UNSIGNED_BYTE;
+  const pixel = new Uint8Array([0, 0, 255, 255]);  // opaque blue
   gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+                width, height, border, srcFormat, srcType,
+                pixel);
 
-  // Set the parameters so we can render any size image.
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-  // Upload the image into the texture.
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  const image = new Image();
+  image.onload = function() {
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+                  srcFormat, srcType, image);
 
-  // lookup uniforms
-  var resolutionLocation = gl.getUniformLocation(program, "u_resolution");
-
-  webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-
-  // Tell WebGL how to convert from clip space to pixels
-  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-  // Clear the canvas
-  gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT);
-
-  // Tell it to use our program (pair of shaders)
-  gl.useProgram(program);
-
-  // Turn on the position attribute
-  gl.enableVertexAttribArray(positionLocation);
-
-  // Bind the position buffer.
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-  // Tell the position attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-  var size = 2;          // 2 components per iteration
-  var type = gl.FLOAT;   // the data is 32bit floats
-  var normalize = false; // don't normalize the data
-  var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-  var offset = 0;        // start at the beginning of the buffer
-  gl.vertexAttribPointer(
-      positionLocation, size, type, normalize, stride, offset);
-
-  // Turn on the texcoord attribute
-  gl.enableVertexAttribArray(texcoordLocation);
-
-  // bind the texcoord buffer.
-  gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
-
-  // Tell the texcoord attribute how to get data out of texcoordBuffer (ARRAY_BUFFER)
-  var size = 2;          // 2 components per iteration
-  var type = gl.FLOAT;   // the data is 32bit floats
-  var normalize = false; // don't normalize the data
-  var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-  var offset = 0;        // start at the beginning of the buffer
-  gl.vertexAttribPointer(
-      texcoordLocation, size, type, normalize, stride, offset);
-
-  // set the resolution
-  gl.uniform2f(resolutionLocation, gl.canvas.width, gl.canvas.height);
-
-  // Draw the rectangle.
-  var primitiveType = gl.TRIANGLES;
-  var offset = 0;
-  var count = 6;
-  gl.drawArrays(primitiveType, offset, count);
+    // WebGL1 has different requirements for power of 2 images
+    // vs non power of 2 images so check if the image is a
+    // power of 2 in both dimensions.
+    if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
+       // Yes, it's a power of 2. Generate mips.
+       gl.generateMipmap(gl.TEXTURE_2D);
+    } else {
+       // No, it's not a power of 2. Turn off mips and set
+       // wrapping to clamp to edge
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    }
+    render(0);
+  };
+  image.src = url;
+  let uSampler = gl.getUniformLocation(prog, 'uSampler');
+  gl.uniform1i(uSampler, 0)
+  return texture;
 }
 
-function setRectangle(gl, x, y, width, height) {
-  var x1 = x;
-  var x2 = x + width;
-  var y1 = y;
-  var y2 = y + height;
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-     x1, y1,
-     x2, y1,
-     x1, y2,
-     x1, y2,
-     x2, y1,
-     x2, y2,
-  ]), gl.STATIC_DRAW);
+function prepareWebGL(gl) {
+  let vertSh = gl.createShader(gl.VERTEX_SHADER);
+  gl.shaderSource(vertSh, vert);
+  gl.compileShader(vertSh);
+
+  let fragSh = gl.createShader(gl.FRAGMENT_SHADER);
+
+  gl.shaderSource(fragSh, frag);
+  gl.compileShader(fragSh);
+
+  console.log(gl.getShaderInfoLog(fragSh));
+  let prog = gl.createProgram();
+  gl.attachShader(prog, vertSh);
+  gl.attachShader(prog, fragSh);
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+  return prog;
 }
 
-main();
+function setArrays(gl, prog){
+  let vertex_buffer = gl.createBuffer();
+  const vertices = [-1.0, -1.0, 1.0, -1.0, -1.0, 1.0,
+                  1.0, 1.0, 1.0, -1.0, -1.0, 1.0,
+  ]
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 
 
-// This is needed if the images are not on the same domain
-// NOTE: The server providing the images must give CORS permissions
-// in order to be able to use the image with WebGL. Most sites
-// do NOT give permission.
-// See: https://webglfundamentals.org/webgl/lessons/webgl-cors-permission.html
-function requestCORSIfNotSameOrigin(img, url) {
-  if ((new URL(url, window.location.href)).origin !== window.location.origin) {
-    img.crossOrigin = "";
+
+  let coord = gl.getAttribLocation(prog, "coords");
+  gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(coord);
+  return [coord, vertex_buffer];
+}
+
+function isPowerOf2(value) {
+    return (value & (value - 1)) == 0;
+  }
+
+let render;
+
+function inIframe () {
+  try {
+      return window.self !== window.top;
+  } catch (e) {
+      return true;
   }
 }
+
+function main(){
+  console.log('main')
+  const c = document.getElementById("c");
+  if (inIframe()){
+    c.height = c.width = document.body.clientWidth;
+  }else{
+    c.height = c.width = 600;
+  }
+  const gl = c.getContext("webgl");
+  const prog = prepareWebGL(gl);
+  const coord = setArrays(gl, prog);
+  const iter = gl.getUniformLocation(prog, "iter");
+  const TS = gl.getUniformLocation(prog, "uTextureSize");
+  const range = document.getElementById("range");
+  console.log(c.clientWidth,c.clientHeight);
+  gl.viewport(0,0,c.width,c.height);
+  gl.uniform1f(TS, 1024.0);
+  console.log(coord);
+
+  render = (it) => {
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    if (window.location.search.substr(1) == "blur"){
+      if(it == 0) it = 1;
+    }else{
+      it /=10;
+    }
+    gl.uniform1f(iter, it);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    console.log("render");
+  }
+
+  const texture = loadTexture(gl, prog, "img.jpg");
+  render(0);
+  
+  range.addEventListener("input", (e) => {
+    render(e.target.value);
+  })
+}
+
+main()
+
