@@ -55,7 +55,7 @@ function drawOrange(gl, programInfo, buffers) {
   /* Задаём координа апельсина */
   mat4.translate(mvMatrix, mvMatrix, [orange.xPos, orange.yPos, orange.zPos]);
   /* Вращаем на какой-то угол (управление с кнопок) */
-  mat4.rotate(mvMatrix, mvMatrix, degToRad(orange.yaw), [0, 1, 0]);
+  mat4.rotate(mvMatrix, mvMatrix, degToRad(orange.yaw), [1, 1, 0]);
   /* Заполняем матрицу нормали с помощью матрцы модели */
   mat3.normalFromMat4(nMatrix, mvMatrix);
 
