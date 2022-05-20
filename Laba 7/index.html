@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Апельсинчик</title>
+    <style type="text/css">
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" ></canvas>
+</body>
+
+<script src="https://webglfundamentals.org/webgl/resources/webgl-utils.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"></script>
+
+<script id="vertex-shader-orange" type="x-shader/x-vertex">
+    
+    /* переменные для буферов */
+    attribute vec3 a_position;
+    attribute vec3 a_normal;
+    attribute vec2 a_texcoord;
+    attribute vec4 a_color;
+
+    /* переменные для матриц */
+    uniform mat4 u_mvMatrix;
+    uniform mat4 u_pMatrix;
+    uniform mat3 u_nMatrix;
+
+    /* то что передаём дальше (во фрагментный шейдер) */
+    varying vec4 v_color;
+    varying vec2 v_texcoord ;
+    varying vec3 normal;
+    varying vec3 vertexPositionEye3;
+
+    /* Всё как в Блинн-Фонг (модель освещения)*/
+    void main() {
+        
+        vec4 vertexPositionEye4 = u_mvMatrix * vec4(a_position, 1.0);
+        vertexPositionEye3 = vertexPositionEye4.xyz / vertexPositionEye4.w;
+
+        normal = normalize(u_nMatrix * a_normal);
+
+        v_color = a_color;
+        gl_Position = u_pMatrix * u_mvMatrix * vec4(a_position, 1.0);
+        v_texcoord  = a_texcoord;
+    }
+</script>
+
+<script id="fragment-shader-orange" type="x-shader/x-fragment">
+    precision mediump float;
+    /* Структура для источника света */
+    struct Light {    
+        vec3 ambient;
+        vec3 position;
+        vec3 diffuse;
+        vec3 specular;
+    };  
+
+    /* То что передавали */
+    varying vec2 v_texcoord ;
+    varying vec4 v_color;
+    varying vec3 normal;
+    varying vec3 vertexPositionEye3;
+
+    /* Текстура, свет и размер экрана */
+    uniform sampler2D u_texture;
+    uniform Light lights;
+    uniform vec2 u_res;
+
+    /* Точно не знаю, но чем меньше число тем ярче свет */
+    const float shininess = 5.0;
+    /* Значение пикселя (1 делим на размер картинки)*/
+    const float pixel = 1. / 1024.;
+
+    vec3 CalcLight(Light light, vec3 normal)
+    {
+        // получаем вектор направления света
+        vec3 lightDirection = normalize(light.position - vertexPositionEye3);
+
+        /* Считаем позиции пикселя сверху и снизу */
+        vec2 position1 = vec2(v_texcoord.x - (pixel), v_texcoord.y);
+        vec2 position2 = vec2(v_texcoord.x + (pixel), v_texcoord.y);
+
+        /* Считаем цвет с текстуры */
+        float color1 = texture2D(u_texture, position1).r;
+        float color2 = texture2D(u_texture, position2).r;
+
+        /* Находим разницу цветов (для нас разницу высот) */
+        float x_gradient = color1 - color2;
+
+        /* Тоже самое только для оси OY (там ось OX)*/
+        position1 = vec2(v_texcoord.x, v_texcoord.y - (pixel));
+        position2 = vec2(v_texcoord.x, v_texcoord.y + (pixel));
+        color1 = texture2D(u_texture, position1).r;
+        color2 = texture2D(u_texture, position2).r;
+        float y_gradient = color1 - color2;
+
+        // получаем нормаль
+        normal = normalize(vec3(normal.x + x_gradient, normal.y + y_gradient, normal.z));
+        // получаем скалярное произведение векторов нормали и направления света
+        float diffuseLightDot = max(dot(normal, lightDirection), 0.0);
+
+        // получаем вектор отраженного луча и нормализуем его
+        vec3 reflectionVector = normalize(reflect(-lightDirection, normal));
+        // установка вектора камеры
+        vec3 viewVectorEye = -normalize(vertexPositionEye3);
+
+        vec3 h = (lightDirection + viewVectorEye) / 2.0;
+
+        float specularLightDot = max(dot(reflectionVector, h), 0.0);
+        float specularLightParam = pow(specularLightDot, shininess);
+
+        vec3 vLightWeighting = light.ambient + light.diffuse * diffuseLightDot +
+                light.specular * specularLightParam;
+
+        return vLightWeighting;
+    } 
+
+    /* Всё как в Блинн-Фонг (модель освещения) */
+    /* Только тут в функции часть считается */
+    void main() {
+        vec4 texture = texture2D(u_texture, v_texcoord);
+        vec3 result = CalcLight(lights, normal); 
+        gl_FragColor = vec4(v_color.rgb * result, v_color.a);
+    }
+</script>
+
+<script src="Parse.js"></script>
+<script src="Orange.js"></script>
+<script src="script.js"></script>
+
+</html>
