@@ -51,28 +51,28 @@ function loadTexture(gl, prog, url) {
   const pixel = new Uint8Array([0, 0, 255, 255]);  // opaque blue
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-                width, height, border, srcFormat, srcType,
-                pixel);
+    width, height, border, srcFormat, srcType,
+    pixel);
 
 
   const image = new Image();
-  image.onload = function() {
+  image.onload = function () {
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-                  srcFormat, srcType, image);
+      srcFormat, srcType, image);
 
     // WebGL1 has different requirements for power of 2 images
     // vs non power of 2 images so check if the image is a
     // power of 2 in both dimensions.
     if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
-       // Yes, it's a power of 2. Generate mips.
-       gl.generateMipmap(gl.TEXTURE_2D);
+      // Yes, it's a power of 2. Generate mips.
+      gl.generateMipmap(gl.TEXTURE_2D);
     } else {
-       // No, it's not a power of 2. Turn off mips and set
-       // wrapping to clamp to edge
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      // No, it's not a power of 2. Turn off mips and set
+      // wrapping to clamp to edge
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     }
     render(0);
   };
@@ -101,10 +101,10 @@ function prepareWebGL(gl) {
   return prog;
 }
 
-function setArrays(gl, prog){
+function setArrays(gl, prog) {
   let vertex_buffer = gl.createBuffer();
   const vertices = [-1.0, -1.0, 1.0, -1.0, -1.0, 1.0,
-                  1.0, 1.0, 1.0, -1.0, -1.0, 1.0,
+    1.0, 1.0, 1.0, -1.0, -1.0, 1.0,
   ]
   gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
@@ -118,36 +118,34 @@ function setArrays(gl, prog){
 }
 
 function isPowerOf2(value) {
-    return (value & (value - 1)) == 0;
-  }
+  return (value & (value - 1)) == 0;
+}
 
 let render;
 
-function inIframe () {
+function inIframe() {
   try {
-      return window.self !== window.top;
+    return window.self !== window.top;
   } catch (e) {
-      return true;
+    return true;
   }
 }
 
-function main(){
+function main() {
   console.log('main')
   const c = document.getElementById("c");
-  if (inIframe()){
+  if (inIframe()) {
     c.height = c.width = document.body.clientWidth;
-  }else{
+  } else {
     c.height = c.width = 600;
   }
   const gl = c.getContext("webgl");
   const prog = prepareWebGL(gl);
   const coord = setArrays(gl, prog);
   const iter = gl.getUniformLocation(prog, "iter");
-  const TS = gl.getUniformLocation(prog, "uTextureSize");
   const range = document.getElementById("range");
-  console.log(c.clientWidth,c.clientHeight);
-  gl.viewport(0,0,c.width,c.height);
-  gl.uniform1f(TS, 1024.0);
+  console.log(c.clientWidth, c.clientHeight);
+  gl.viewport(0, 0, c.width, c.height);
   console.log(coord);
 
   render = (it) => {
@@ -157,19 +155,53 @@ function main(){
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    if (window.location.search.substr(1) == "blur"){
-      if(it == 0) it = 1;
-    }else{
-      it /=10;
-    }
+    it /= 10;
     gl.uniform1f(iter, it);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     console.log("render");
   }
 
-  const texture = loadTexture(gl, prog, "img.jpg");
-  render(0);
-  
+  const texture = loadTexture(gl, prog, "1.png");
+  // var SIZE = 40;
+  // var i = -SIZE;
+  // var isRight = false;
+
+  // function myLoop() {           //  create a loop function
+  //   setTimeout(function () {    //  call a 3s setTimeout when the loop is called
+  //     render(i)          //  your code here
+  //                         //  increment the counter
+      
+  //     if(isRight == false){
+  //       if (i < SIZE) {            
+  //         i++;        
+  //       }
+  //       else if (i > SIZE){
+  //         i--;
+  //       }  
+  //       else{
+  //         isRight = true;
+  //       }
+  //     }
+  //     else{
+  //       if (i > SIZE) {            
+  //         i++;        
+  //       }
+  //       else if (i <= SIZE && i >= -SIZE){
+  //         i--;
+  //       }  
+  //       else{
+  //         isRight = false;
+  //       }
+  //     }
+
+  //     console.log(i, isRight)
+  //     myLoop();                     //  ..  setTimeout()
+  //   }, 10)
+  // }
+
+  // myLoop();
+
+
   range.addEventListener("input", (e) => {
     render(e.target.value);
   })
