@@ -6,7 +6,7 @@ function initProgramOrange(gl) {
 /* Загружаем модель из файла и создаём массивы данных и задаём дополнительно цвет */
 /* Взял с интернета и переделал */
 async function initBuffersOrange(gl) {
-const response = await fetch('./model/sphere.obj');  
+const response = await fetch('./model/sphere3.obj');  
 const text = await response.text();
 const obj =  parseOBJ(text);
 

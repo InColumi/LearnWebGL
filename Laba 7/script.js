@@ -32,7 +32,7 @@ window.onload = async function main() {
 
   /* Загружаем текстуру */
   const collectionTextures = [
-    loadTexture(gl, "texture.png")
+    loadTexture(gl, "1.png")
   ]
 
   /* Создаём буферы */
