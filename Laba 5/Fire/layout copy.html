@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="glsl-component.js"></script>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            padding: 0;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+<glsl-component>
+    #ifdef GL_ES
+    precision mediump float;
+    #endif
+
+    uniform vec2 u_resolution;
+    uniform vec2 u_mouse;
+    uniform float u_time;
+    
+    float random (in vec2 st) {
+        return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+    }
+
+    float noise(in vec2 st) {
+        vec2 i = floor(st);
+        vec2 f = fract(st);
+
+    // Four corners in 2D of a tile
+        float a = random(i);
+        float b = random(i + vec2(1.0, 0.0));
+        float c = random(i + vec2(0.0, 1.0));
+        float d = random(i + vec2(1.0, 1.0));
+
+        vec2 u = f * f * (3.0 - 2.0 * f);
+
+        return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) +(d - b) * u.x * u.y;
+    }
+
+    void main() {
+        float min = 100.0;
+        float x = 2.0 * gl_FragCoord.x / u_resolution.x * min;
+        float y = 2.0 * gl_FragCoord.y / u_resolution.y * min;  
+
+        float ro = sin(x * x + y * y) * u_time;
+        
+        float grad = (2. * y / u_resolution.y) - 0.1;
+        
+        float n = noise(vec2(ro, u_time));
+
+        gl_FragColor = vec4(n * .93, n * .40, n * .43, 1.0);
+        
+    }
+</glsl-component>
+</body>
+</html>

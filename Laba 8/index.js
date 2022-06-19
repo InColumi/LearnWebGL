@@ -155,13 +155,13 @@ function main() {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    it /= 10;
+    it /= 1;
     gl.uniform1f(iter, it);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     console.log("render");
   }
 
-  const texture = loadTexture(gl, prog, "1.png");
+  const texture = loadTexture(gl, prog, "2.png");
   // var SIZE = 40;
   // var i = -SIZE;
   // var isRight = false;

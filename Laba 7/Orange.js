@@ -14,17 +14,6 @@ const extents = getGeometriesExtents(obj.geometries);
 orange.yPos = -extents.min[1]
 
 return obj.geometries.map(({data}) => {
-    // Because data is just named arrays like this
-    //
-    // {
-    //   position: [...],
-    //   texcoord: [...],
-    //   normal: [...],
-    // }
-    //
-    // and because those names match the attributes in our vertex
-    // shader we can pass it directly into `createBufferInfoFromArrays`
-    // from the article "less code more fun".
 
     if (data.color) {
       if (data.position.length === data.color.length) {
